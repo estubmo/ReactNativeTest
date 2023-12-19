@@ -9,12 +9,12 @@ const client = new ApolloClient({
 
 const AlbumItem = ({ album }) => {
   return (
-    <View>
+    <View style={styles.item}>
       <Image
         source={{ uri: album.photos.data[0].thumbnailUrl }}
         style={styles.photo}
       />
-      <Text>{album.title}</Text>
+      <Text style={styles.title}>{album.title}</Text>
     </View>
   );
 };
@@ -31,7 +31,7 @@ const AlbumsComponent = () => {
   });
 
   return (
-    <View>
+    <View style={styles.list}>
       {data?.albums?.data?.map((album) => (
         <AlbumItem key={album.id} album={album} />
       ))}
@@ -51,11 +51,37 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: {
+    display: "flex",
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#f0f",
+    flexDirection: "column",
     justifyContent: "center",
+    alignItems: "center",
+  },
+  list: {
+    flex: 1,
+    flexDirection: "column",
+    alignItems: "flex-start",
+    width: "100%",
+    gap: 10,
+    flexShrink: 0,
+    backgroundColor: "#ff0",
+    paddingVertical: 80,
+    paddingHorizontal: 16,
+  },
+  item: {
+    display: "flex",
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 16,
+    backgroundColor: "#0ff",
+    alignSelf: "stretch",
+  },
+  title:{
+    textTransform: "capitalize"
   },
   photo: {
+    borderRadius: 8,
     width: 60,
     height: 60,
   },
