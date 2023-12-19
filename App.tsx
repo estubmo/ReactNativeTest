@@ -10,6 +10,9 @@ import {
 } from "react-native";
 import { useAlbumsQuery, type AlbumsPage } from "./types/graphql";
 
+const LIMIT = 10;
+const DEFAULT_PAGE = 1;
+
 const client = new ApolloClient({
   uri: "https://graphqlzero.almansi.me/api",
   cache: new InMemoryCache({
@@ -30,6 +33,7 @@ const client = new ApolloClient({
     },
   }),
 });
+
 const AlbumItem = ({ album }) => {
   return (
     <View style={styles.item}>
@@ -44,15 +48,14 @@ const AlbumItem = ({ album }) => {
 
 const AlbumsComponent = () => {
   const [refetching, setRefetching] = useState(false);
-  const [limit, setLimit] = useState(10);
-  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
-  const { data, refetch, fetchMore } = useAlbumsQuery({
+  const { data, refetch, loading, fetchMore } = useAlbumsQuery({
     variables: {
       options: {
         paginate: {
-          limit,
-          page,
+          limit: LIMIT,
+          page: DEFAULT_PAGE,
         },
       },
     },
@@ -60,11 +63,13 @@ const AlbumsComponent = () => {
 
   const handleRefetch = async () => {
     setRefetching(true);
+
+    setHasMore(!!data?.albums?.links?.next);
     await refetch({
       options: {
         paginate: {
-          limit: 10,
-          page: 1,
+          limit: LIMIT,
+          page: DEFAULT_PAGE,
         },
       },
     });
@@ -72,37 +77,49 @@ const AlbumsComponent = () => {
   };
 
   const handleLoadMore = async () => {
-    if (!data?.albums?.links?.next?.page) return;
+    if (loading) return;
+    setHasMore(true);
+
+    if (!data?.albums?.links?.next) {
+      setHasMore(false);
+      return;
+    }
+
     await fetchMore({
       variables: {
         options: {
           paginate: {
-            limit: data?.albums.links?.next?.limit || 10,
-            page: data?.albums.links?.next?.page || 2,
+            limit: data?.albums.links?.next?.limit || LIMIT,
+            page: data?.albums.links?.next?.page || DEFAULT_PAGE + 1,
           },
         },
       },
     });
   };
-
+  console.log("🚀 ~ file: App.tsx:115 ~ AlbumsComponent ~ hasMore:", hasMore);
 
   return (
-    <View style={styles.list}>
-      <FlatList
-        data={data?.albums?.data}
-        renderItem={({ item }) => <AlbumItem key={item.id} album={item} />}
-        keyExtractor={(item) => item.id}
-        onRefresh={handleRefetch}
-        refreshing={refetching}
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={() => (
-          <View>
-            <Text>Footer</Text>
-          </View>
-        )}
-      />
-    </View>
+    <FlatList
+      data={data?.albums?.data}
+      style={styles.list}
+      renderItem={({ item }) => <AlbumItem key={item.id} album={item} />}
+      keyExtractor={(item) => item.id}
+      onRefresh={handleRefetch}
+      refreshing={refetching}
+      getItemLayout={(_, index) => ({
+        length: 80,
+        offset: 80 * index,
+        index,
+      })}
+      onEndReached={handleLoadMore}
+      ListFooterComponent={() => (
+        <View style={{ height: 80 }}>
+          {!loading && (
+            <Text>{hasMore ? "Load more..." : "You reached the end"}</Text>
+          )}
+        </View>
+      )}
+    />
   );
 };
 
@@ -119,19 +136,18 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     display: "flex",
-    flex: 1,
-    flexDirection: "column",
     justifyContent: "center",
-    alignItems: "center",
-  },
-  list: {
+    paddingVertical: 80,
+    paddingHorizontal: 16,
     flex: 1,
     flexDirection: "column",
     alignItems: "flex-start",
     width: "100%",
     flexShrink: 0,
-    paddingVertical: 80,
-    paddingHorizontal: 16,
+  },
+  list: {
+    width: "100%",
+    flexGrow: 0,
   },
   item: {
     display: "flex",
