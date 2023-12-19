@@ -70,6 +70,7 @@ const AlbumItem = ({ album }) => {
 
 const AlbumsComponent = () => {
   const [refetching, setRefetching] = useState(false);
+  const [fetchingMore, setFetchingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
   const { data, refetch, loading, fetchMore } = useAlbumsQuery({
@@ -107,6 +108,7 @@ const AlbumsComponent = () => {
       return;
     }
 
+    setFetchingMore(true);
     await fetchMore({
       variables: {
         options: {
@@ -117,6 +119,7 @@ const AlbumsComponent = () => {
         },
       },
     });
+    setFetchingMore(false);
   };
 
   return (
@@ -127,16 +130,19 @@ const AlbumsComponent = () => {
       keyExtractor={(item) => item.id}
       onRefresh={handleRefetch}
       refreshing={refetching}
-      getItemLayout={(_, index) => ({
-        length: 80,
-        offset: 80 * index,
-        index,
-      })}
       onEndReached={handleLoadMore}
       ListFooterComponent={() => (
-        <View style={{ height: 80 }}>
+        <View>
           {!loading && (
-            <Text>{hasMore ? "Load more..." : "You reached the end"}</Text>
+            <View style={styles.loadMoreIndicator}>
+              {fetchingMore ? (
+                <Text style={styles.loadMoreText}>Laster...</Text>
+              ) : (
+                <Text style={styles.loadMoreText}>
+                  {hasMore ? "Last mer..." : "Du har nådd enden."}
+                </Text>
+              )}
+            </View>
           )}
         </View>
       )}
@@ -154,7 +160,7 @@ export default function App() {
         <SafeAreaView
           style={[
             styles.container,
-            modalVisible && styles.containerTransparent
+            modalVisible && styles.containerTransparent,
           ]}
         >
           <AlbumsComponent />
@@ -193,7 +199,6 @@ const styles = StyleSheet.create({
   container: {
     display: "flex",
     justifyContent: "center",
-    paddingVertical: 80,
     paddingHorizontal: 16,
     flex: 1,
     flexDirection: "column",
@@ -203,8 +208,9 @@ const styles = StyleSheet.create({
   },
   containerTransparent: {
     backgroundColor: "rgba(0,0,0,0.5)",
-    },
+  },
   list: {
+    paddingVertical: 80,
     width: "100%",
     flexGrow: 0,
   },
@@ -216,7 +222,20 @@ const styles = StyleSheet.create({
     gap: 16,
     alignSelf: "stretch",
   },
+  loadMoreIndicator: {
+    height: 250,
+    alighSelf: "stretch",
+    alignItems: "center",
+    marginTop: 40,
+  },
+  loadMoreText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#180435",
+  },
   title: {
+    fontSize: 12,
+    fontWeight: "600",
     textTransform: "capitalize",
   },
   photo: {
