@@ -7,7 +7,6 @@ import {
     useState,
 } from "react";
 import {
-    Alert,
     FlatList,
     Image,
     Modal,
@@ -15,7 +14,7 @@ import {
     SafeAreaView,
     StyleSheet,
     Text,
-    View,
+    View
 } from "react-native";
 import { Album, useAlbumsQuery, type AlbumsPage } from "./types/graphql";
 
@@ -169,7 +168,6 @@ export default function App() {
             transparent={true}
             visible={modalVisible}
             onRequestClose={() => {
-              Alert.alert("Modal has been closed.");
               setModalVisible(!modalVisible);
             }}
           >

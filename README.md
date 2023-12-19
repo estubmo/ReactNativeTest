@@ -24,3 +24,14 @@ https://www.figma.com/file/jei4CDpTa1SjQof3mEHJ1q/Untitled?type=design&node-id=0
 #### GraphQL playground
 
 https://graphqlzero.almansi.me/api
+
+
+### Ting jeg ville forbedret om jeg brukte mer tid på oppgaven
+
+- For å laste mer må man scrolle til bunn på FlatList. Det fungerer ikke om listen er for kort. Dette er løst med å ha et View som er høyt nok til at man må scrolle. Jeg ville heller lagt til en knapp som laster inn mer data.
+
+- Splitte opp komponenten i egne filer.
+
+- Expo Font var buggy, så jeg utelot å bruke det nå.
+
+- Overlay er ikke over bildene.
