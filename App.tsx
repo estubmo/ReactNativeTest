@@ -1,12 +1,35 @@
 import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
-import { Image, StyleSheet, Text, View } from "react-native";
-import { useAlbumsQuery } from "./types/graphql";
+import { useState } from "react";
+import {
+    FlatList,
+    Image,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
+import { useAlbumsQuery, type AlbumsPage } from "./types/graphql";
 
 const client = new ApolloClient({
   uri: "https://graphqlzero.almansi.me/api",
-  cache: new InMemoryCache(),
+  cache: new InMemoryCache({
+    typePolicies: {
+      Query: {
+        fields: {
+          albums: {
+            keyArgs: false,
+            merge(existing = [], incoming: AlbumsPage) {
+              return {
+                ...incoming,
+                data: [...(existing?.data ?? []), ...(incoming?.data ?? [])],
+              };
+            },
+          },
+        },
+      },
+    },
+  }),
 });
-
 const AlbumItem = ({ album }) => {
   return (
     <View style={styles.item}>
@@ -20,21 +43,65 @@ const AlbumItem = ({ album }) => {
 };
 
 const AlbumsComponent = () => {
-  const { data } = useAlbumsQuery({
+  const [refetching, setRefetching] = useState(false);
+  const [limit, setLimit] = useState(10);
+  const [page, setPage] = useState(1);
+
+  const { data, refetch, fetchMore } = useAlbumsQuery({
     variables: {
       options: {
         paginate: {
-          limit: 10,
+          limit,
+          page,
         },
       },
     },
   });
 
+  const handleRefetch = async () => {
+    setRefetching(true);
+    await refetch({
+      options: {
+        paginate: {
+          limit: 10,
+          page: 1,
+        },
+      },
+    });
+    setRefetching(false);
+  };
+
+  const handleLoadMore = async () => {
+    if (!data?.albums?.links?.next?.page) return;
+    await fetchMore({
+      variables: {
+        options: {
+          paginate: {
+            limit: data?.albums.links?.next?.limit || 10,
+            page: data?.albums.links?.next?.page || 2,
+          },
+        },
+      },
+    });
+  };
+
+
   return (
     <View style={styles.list}>
-      {data?.albums?.data?.map((album) => (
-        <AlbumItem key={album.id} album={album} />
-      ))}
+      <FlatList
+        data={data?.albums?.data}
+        renderItem={({ item }) => <AlbumItem key={item.id} album={item} />}
+        keyExtractor={(item) => item.id}
+        onRefresh={handleRefetch}
+        refreshing={refetching}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={() => (
+          <View>
+            <Text>Footer</Text>
+          </View>
+        )}
+      />
     </View>
   );
 };
@@ -42,9 +109,9 @@ const AlbumsComponent = () => {
 export default function App() {
   return (
     <ApolloProvider client={client}>
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <AlbumsComponent />
-      </View>
+      </SafeAreaView>
     </ApolloProvider>
   );
 }
@@ -53,7 +120,6 @@ const styles = StyleSheet.create({
   container: {
     display: "flex",
     flex: 1,
-    backgroundColor: "#f0f",
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
@@ -63,9 +129,7 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     alignItems: "flex-start",
     width: "100%",
-    gap: 10,
     flexShrink: 0,
-    backgroundColor: "#ff0",
     paddingVertical: 80,
     paddingHorizontal: 16,
   },
@@ -73,12 +137,12 @@ const styles = StyleSheet.create({
     display: "flex",
     alignItems: "center",
     flexDirection: "row",
+    marginBottom: 10,
     gap: 16,
-    backgroundColor: "#0ff",
     alignSelf: "stretch",
   },
-  title:{
-    textTransform: "capitalize"
+  title: {
+    textTransform: "capitalize",
   },
   photo: {
     borderRadius: 8,
