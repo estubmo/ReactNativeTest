@@ -24,7 +24,7 @@ const AlbumsComponent = () => {
     variables: {
       options: {
         paginate: {
-          limit: 1,
+          limit: 10,
         },
       },
     },
